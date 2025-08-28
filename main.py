@@ -12,6 +12,8 @@ ROBOT_IP = "192.168.3.15"
 ROBOT_PORT = "6001"
 wspeed = 30  # default speed
 
+
+#https://github.com/Ali-Kalsekar/Cobot-software.git
 # For Action Tab
 current_step_index = 0
 program_running = False

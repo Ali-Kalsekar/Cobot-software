@@ -1,0 +1,292 @@
+<!doctype html>
+<html>
+<head>
+  <meta charset="utf-8">
+  <title>Blockly Editor — Cobot</title>
+
+  <script src="https://unpkg.com/blockly/blockly.min.js"></script>
+
+  <script>
+    // Defines the custom robot-specific blocks and their code generators.
+    function defineBlocks() {
+      // --- Custom Block Definitions ---
+
+      // Move a joint to a specific angle
+      Blockly.Blocks['movej'] = {
+        init: function() {
+          this.appendDummyInput()
+              .appendField("Move Joints (movej)")
+              .appendField("J1").appendField(new Blockly.FieldNumber(0), "J1")
+              .appendField("J2").appendField(new Blockly.FieldNumber(0), "J2")
+              .appendField("J3").appendField(new Blockly.FieldNumber(0), "J3")
+              .appendField("J4").appendField(new Blockly.FieldNumber(0), "J4")
+              .appendField("J5").appendField(new Blockly.FieldNumber(0), "J5")
+              .appendField("J6").appendField(new Blockly.FieldNumber(0), "J6");
+          this.setPreviousStatement(true, null);
+          this.setNextStatement(true, null);
+          this.setColour("#D4AF37");
+          this.setTooltip("Moves the robot to a specified joint configuration.");
+        }
+      };
+      Blockly.JavaScript.forBlock['movej'] = function(block) {
+          let params = {
+              j1: block.getFieldValue('J1'), j2: block.getFieldValue('J2'),
+              j3: block.getFieldValue('J3'), j4: block.getFieldValue('J4'),
+              j5: block.getFieldValue('J5'), j6: block.getFieldValue('J6'),
+          };
+          return `bridge_cmds.push({action: 'movej', params: ${JSON.stringify(params)}});\n`;
+      };
+
+      // Move to a cartesian position (linear move)
+      Blockly.Blocks['movel'] = {
+        init: function() {
+          this.appendDummyInput()
+              .appendField("Move Linear (movel)")
+              .appendField("X").appendField(new Blockly.FieldNumber(0), "X")
+              .appendField("Y").appendField(new Blockly.FieldNumber(0), "Y")
+              .appendField("Z").appendField(new Blockly.FieldNumber(0), "Z")
+              .appendField("Rx").appendField(new Blockly.FieldNumber(0), "RX")
+              .appendField("Ry").appendField(new Blockly.FieldNumber(0), "RY")
+              .appendField("Rz").appendField(new Blockly.FieldNumber(0), "RZ");
+          this.setPreviousStatement(true, null);
+          this.setNextStatement(true, null);
+          this.setColour("#D4AF37");
+          this.setTooltip("Moves the robot to a specified cartesian position in a straight line.");
+        }
+      };
+      Blockly.JavaScript.forBlock['movel'] = function(block) {
+          let params = {
+              x: block.getFieldValue('X'), y: block.getFieldValue('Y'),
+              z: block.getFieldValue('Z'), rx: block.getFieldValue('RX'),
+              ry: block.getFieldValue('RY'), rz: block.getFieldValue('RZ'),
+          };
+          return `bridge_cmds.push({action: 'movel', params: ${JSON.stringify(params)}});\n`;
+      };
+
+      // Set robot speed
+      Blockly.Blocks['set_speed'] = {
+        init: function() {
+          this.appendDummyInput()
+              .appendField("Set Speed to")
+              .appendField(new Blockly.FieldNumber(100, 0, 100), "SPEED")
+              .appendField("%");
+          this.setPreviousStatement(true, null);
+          this.setNextStatement(true, null);
+          this.setColour("#b88f2a");
+          this.setTooltip("Sets the robot's speed (0-100%).");
+        }
+      };
+      Blockly.JavaScript.forBlock['set_speed'] = function(block) {
+        let speed = block.getFieldValue('SPEED');
+        return `bridge_cmds.push({action: 'set_speed', params: {speed: ${speed}}});\n`;
+      };
+
+      // Set servo state
+      Blockly.Blocks['set_servo_state'] = {
+        init: function() {
+          this.appendDummyInput()
+              .appendField("Set Servo")
+              .appendField(new Blockly.FieldDropdown([["ON", "1"], ["OFF", "0"]]), "STATE");
+          this.setPreviousStatement(true, null);
+          this.setNextStatement(true, null);
+          this.setColour("#b88f2a");
+          this.setTooltip("Turns the robot servos on or off.");
+        }
+      };
+      Blockly.JavaScript.forBlock['set_servo_state'] = function(block) {
+        let state = block.getFieldValue('STATE');
+        return `bridge_cmds.push({action: 'set_servo_state', params: {state: ${state}}});\n`;
+      };
+      
+      // Go Home
+      Blockly.Blocks['go_home'] = {
+          init: function() {
+              this.appendDummyInput().appendField("Go Home");
+              this.setPreviousStatement(true, null);
+              this.setNextStatement(true, null);
+              this.setColour("#D4AF37");
+              this.setTooltip("Sends the robot to its predefined home position.");
+          }
+      };
+      Blockly.JavaScript.forBlock['go_home'] = function(block) {
+          return `bridge_cmds.push({action: 'go_home', params: {}});\n`;
+      };
+
+      // Wait block
+      Blockly.Blocks['wait'] = {
+        init: function() {
+          this.appendDummyInput()
+              .appendField("Wait for")
+              .appendField(new Blockly.FieldNumber(1, 0, 3600, 0.1), "SECONDS")
+              .appendField("seconds");
+          this.setPreviousStatement(true, null);
+          this.setNextStatement(true, null);
+          this.setColour("#5C68A6");
+          this.setTooltip("Pauses the script for a specified number of seconds.");
+        }
+      };
+      Blockly.JavaScript.forBlock['wait'] = function(block) {
+        let seconds = block.getFieldValue('SECONDS');
+        return `bridge_cmds.push({action: 'wait', params: {seconds: ${seconds}}});\n`;
+      };
+    }
+    // Call defineBlocks immediately to ensure all block definitions are registered.
+    defineBlocks();
+  </script>
+
+  <script src="./qwebchannel.js"></script>
+
+  <style>
+    html, body { height:100%; margin:0; overflow:hidden; font-family: Segoe UI, sans-serif; background: #0b0b0b; color: #fff;}
+    #controls { height:48px; background:#1a1a1a; padding: 0 12px; display:flex; align-items:center; gap:10px; border-bottom: 3px solid #b9daf9; box-sizing: border-box; }
+    #blocklyArea { height: calc(100% - 48px); width:100%; }
+    #blocklyDiv { height:100%; width:100%; }
+    button { padding:8px 16px; font-size:14px; font-weight: bold; color: black; background-color: #b9daf9; border: 2px solid #82c8e5; border-radius: 8px; cursor: pointer; transition: background-color 0.2s; }
+    button:hover { background-color: #82c8e5; }
+    #statusLabel { color: #b9daf9; font-weight: bold; }
+  </style>
+</head>
+<body>
+  <div id="controls">
+    <button onclick="runScript()">Run Script</button>
+    <button onclick="generateCode()">Generate Python</button>
+    <button onclick="saveXml()">Save Blocks</button>
+    <button onclick="loadXml()">Load Blocks</button>
+    <button onclick="workspace.clear()">Clear</button>
+    <span style="flex:1"></span>
+    <small id="statusLabel">Ready</small>
+  </div>
+
+  <div id="blocklyArea">
+    <div id="blocklyDiv"></div>
+  </div>
+
+  <xml id="toolbox" style="display:none">
+    <category name="Motion" colour="#D4AF37">
+      <block type="movej"></block>
+      <block type="movel"></block>
+      <block type="go_home"></block>
+    </category>
+    <category name="Settings" colour="#b88f2a">
+      <block type="set_speed"></block>
+      <block type="set_servo_state"></block>
+    </category>
+    <category name="Control" colour="#5CA65C">
+      <block type="wait"></block>
+      <block type="controls_repeat_ext">
+        <value name="TIMES">
+          <shadow type="math_number"><field name="NUM">3</field></shadow>
+        </value>
+      </block>
+    </category>
+    <category name="Math" colour="#5C68A6">
+      <block type="math_number"></block>
+    </category>
+  </xml>
+
+  <script>
+    var workspace = null;
+    var bridge = null;
+
+    // Generates a list of command objects from the workspace blocks.
+    function getCommandsFromWorkspace() {
+      // The JS generator will create a string like: "bridge_cmds.push({...}); bridge_cmds.push({...});"
+      // We evaluate this string to populate the `bridge_cmds` array.
+      var bridge_cmds = [];
+      var code = Blockly.JavaScript.workspaceToCode(workspace);
+      try {
+        eval(code);
+      } catch (e) {
+        console.error("Error evaluating generated code:", e);
+        alert("Error in blocks: " + e.message);
+        return null;
+      }
+      return bridge_cmds;
+    }
+    
+    // Sends the command list to Python to be executed.
+    function runScript() {
+      if (!bridge) { alert("Python bridge is not connected."); return; }
+      const commands = getCommandsFromWorkspace();
+      if (commands) {
+        const message = JSON.stringify({ type: 'run_script', commands: commands });
+        bridge.receiveFromJs(message);
+        document.getElementById('statusLabel').innerText = "Script sent to Python for execution...";
+      }
+    }
+
+    // Sends the command list to Python to generate Python code.
+    function generateCode() {
+      if (!bridge) { alert("Python bridge is not connected."); return; }
+      const commands = getCommandsFromWorkspace();
+      if (commands) {
+        const message = JSON.stringify({ type: 'generate_code', commands: commands });
+        bridge.receiveFromJs(message);
+        document.getElementById('statusLabel').innerText = "Requesting Python code generation...";
+      }
+    }
+    
+    // Sends the workspace XML to Python to be saved to a file.
+    function saveXml(){
+      if (!bridge) { alert("Python bridge is not connected."); return; }
+      const xml = Blockly.Xml.workspaceToDom(workspace);
+      const xmlText = Blockly.Xml.domToText(xml);
+      const message = JSON.stringify({ type: 'save_xml', xml: xmlText });
+      bridge.receiveFromJs(message);
+      document.getElementById('statusLabel').innerText = "Requesting Python to save file...";
+    }
+    
+    // Asks Python to open a file dialog to load XML.
+    function loadXml() {
+      if (!bridge) { alert("Python bridge is not connected."); return; }
+      const message = JSON.stringify({ type: 'load_xml' });
+      bridge.receiveFromJs(message);
+      document.getElementById('statusLabel').innerText = "Requesting Python to load file...";
+    }
+
+    // This function is called by Python to load XML content into the workspace.
+    function loadXmlContent(xmlText) {
+        try {
+            workspace.clear();
+            const xmlDom = Blockly.utils.xml.textToDom(xmlText);
+            Blockly.Xml.domToWorkspace(xmlDom, workspace);
+            document.getElementById('statusLabel').innerText = "Blocks loaded successfully!";
+        } catch (e) {
+            console.error('Error loading XML:', e);
+            alert('Failed to load blocks from file. Invalid format.');
+            document.getElementById('statusLabel').innerText = "Error loading blocks.";
+        }
+    }
+
+    // Initializes the Blockly workspace and the QWebChannel connection.
+    window.onload = function() {
+      // Initialize Blockly
+      const workspace_options = {
+        toolbox: document.getElementById('toolbox'),
+        scrollbars: true,
+        trashcan: true,
+        renderer: 'thrasos' // A modern Blockly renderer
+      };
+      workspace = Blockly.inject('blocklyDiv', workspace_options);
+      
+      // Initialize QWebChannel
+      if (typeof QWebChannel !== 'undefined') {
+          new QWebChannel(qt.webChannelTransport, function(channel) {
+            window.bridge = channel.objects.bridge;
+            document.getElementById('statusLabel').innerText = "Python Connected";
+
+            // Listen for messages from Python (e.g., to load XML)
+            bridge.updateFromPython.connect(function(msg) {
+                const data = JSON.parse(msg);
+                if (data.type === 'load_xml_content' && data.xml) {
+                    loadXmlContent(data.xml);
+                }
+            });
+          });
+      } else {
+          document.getElementById('statusLabel').innerText = "Error: QWebChannel not loaded.";
+      }
+    };
+  </script>
+</body>
+</html>
